@@ -619,13 +619,16 @@ public class ProximityValidation {
 		Vector<Cluster> translocations;
 		File in1 = inFile;
 		File out1 = outFile;
-		outFile=new File(out1.getAbsolutePath()+".preclustered.txt");
-		translocations = run(true,false,false,in1);
-		System.out.println("\tNumber of clusters before filtering: "+translocations.size());
-		logW.write("number of clusters before filtering: "+translocations.size());
-		logW.newLine();
-		filterReadPairsAccordingToMvm(logW);
-		inFile = new File(outFile.getParent()+"/filtered_cluster_reads.txt");
+		
+		if(pairedValidityRatioThreshold >= 0){
+			outFile=new File(out1.getAbsolutePath()+".preclustered.txt");
+			translocations = run(true,false,false,in1);
+			System.out.println("\tNumber of clusters before filtering: "+translocations.size());
+			logW.write("number of clusters before filtering: "+translocations.size());
+			logW.newLine();
+			filterReadPairsAccordingToMvm(logW);
+			inFile = new File(outFile.getParent()+"/filtered_cluster_reads.txt");
+		}
 		outFile = new File(out1.getAbsolutePath()+".reclustered.txt");
 		
 		reinitialise(false);
@@ -699,6 +702,10 @@ public class ProximityValidation {
 	}
 	
 	private double obtainPairedValidityThreshold(double significanceLevel, int readLength) throws IOException{
+		if(significanceLevel<0){
+			System.out.println("\tSkipping MVM threshold estimation. Filter will be inactive !");
+			return -1;
+		}
 		File concordantFile=grepConcFile();
 		if(concordantFile==null){
 			System.err.println("ERROR::ProximityValidation:obtainPairedValidityThreshold: Specified input file is in a folder that does not contain a concordant-read-file!");

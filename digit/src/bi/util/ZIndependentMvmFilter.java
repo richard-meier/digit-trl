@@ -63,7 +63,8 @@ public class ZIndependentMvmFilter implements Runnable{
 
 	private void independentMvmFilter(ConcurrentLinkedQueue<StringPair> in, File out) throws IOException{
 		BufferedWriter bw = new BufferedWriter(new FileWriter(out));
-		BufferedWriter allValuesWriter = new BufferedWriter(new FileWriter(out));
+//		BufferedWriter allValuesWriter = new BufferedWriter(new FileWriter(out+"av.txt"));
+		BufferedWriter allValuesWriter=null;
 		String line1, line2;
 
 		while(in.peek()!=null){
@@ -100,7 +101,7 @@ public class ZIndependentMvmFilter implements Runnable{
 			}
 		}
 		bw.close();
-		allValuesWriter.close();
+//		allValuesWriter.close();
 	}
 	
 	public long getProgress(){

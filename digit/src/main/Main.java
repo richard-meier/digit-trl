@@ -36,7 +36,9 @@ public class Main {
 	inputFile2 = null,
 	inputFile3 = null,
 	inputFile4 = null,
-	outputPath = null;
+	outputPath = null,
+	chromLengthFile = null;
+	
 	public static String[] inputArray1=null;
 	public static double numberTimesSigma;
 	public static int proximityCount;
@@ -54,7 +56,7 @@ public class Main {
 			"       -o output     \t specify output file for the created index\n\n";
 	
 	public static final String u_ficore = "ficore\n"+
-			"       -o output     \t specify output file for library creation\n"+
+			"       -lc output     \t specify output file for library creation\n"+
 			"       -D target     \t specify list of files in target (disease) group\n"+
 			"       -N other      \t specify list of files in other (normal) group\n"+
 			"       -C groups     \t specify sub-groups\n\n";
@@ -65,7 +67,7 @@ public class Main {
 			"       -s sigma    \t specify the multiple of sigma [2.33]\n"+
 			"       -lc lc-file \t file with low complexity region annotation of the genome\n"+
 			"       -q quality  \t MAPQ threshold used to reject reads [0]\n"+
-			"       -a aligner  \t specify the alignment software used to create infile [bowtie2]\n\n";
+			"       -a aligner  \t specify the alignment software used to create infile [false]\n\n";
 
 	public static final String u_revcomp = "revcomp\n"+
 			"       -i infile \t specify fastq input file\n"+
@@ -107,8 +109,9 @@ public class Main {
 		}
 		else if(args[0].equals("analyse")){
 			mapQual=0;
+			chromLengthFile=null;
 			applyAnalyseInputArguments(args);
-			Analyser myNewAnalyser=new Analyser(inputFile, outputPath, numberTimesSigma, type, new File(inputFile2), mapQual, null);
+			Analyser myNewAnalyser=new Analyser(inputFile, outputPath, numberTimesSigma, type, new File(inputFile2), mapQual, chromLengthFile);
 			myNewAnalyser.run();
 		}
 		else if(args[0].equals("proxval")){
@@ -117,24 +120,25 @@ public class Main {
 			proximityCount = 3;
 			proximityThreshold = 100;
 			printReadNames=false;
+			chromLengthFile=null;
 			applyProxvalArguments(args);
-			ProximityValidation proxVal=new ProximityValidation(new File(inputFile), new File(outputPath), proximityCount,proximityThreshold, inputFile2, inputFile3, true, mvmConcordantThreshold, null);
+			ProximityValidation proxVal=new ProximityValidation(new File(inputFile), new File(outputPath), proximityCount, proximityThreshold, inputFile2, inputFile3, true, mvmConcordantThreshold, chromLengthFile);
 			if(anker>0){
 				proxVal.overwriteAnkerLimit(anker);
-				System.out.println("USING alternative anker span: "+anker);
+				System.out.println("USING alternative anchor span: "+anker);
 			}
 			proxVal.performClusterAnalysis(readLength);
 		}
-		else if(args[0].equals("proxvalZ")){
-			anker=-1;
-			readLength=-1;
-			proximityCount = 3;
-			proximityThreshold = 100;
-			printReadNames=false;
-			applyProxvalArguments(args);
-			ProximityValidationZ proxVal=new ProximityValidationZ(new File(inputFile), new File(outputPath), proximityCount,proximityThreshold, inputFile2, inputFile3, true, null);
-			proxVal.performClusterAnalysis(readLength);
-		}
+//		else if(args[0].equals("proxvalZ")){
+//			anker=-1;
+//			readLength=-1;
+//			proximityCount = 3;
+//			proximityThreshold = 100;
+//			printReadNames=false;
+//			applyProxvalArguments(args);
+//			ProximityValidationZ proxVal=new ProximityValidationZ(new File(inputFile), new File(outputPath), proximityCount,proximityThreshold, inputFile2, inputFile3, true, null);
+//			proxVal.performClusterAnalysis(readLength);
+//		}
 		else if(args[0].equals("mvmfo")){
 			readLength=-1;
 			proximityCount = 3;
@@ -142,9 +146,9 @@ public class Main {
 			printReadNames=false;
 			mvmConcordantThreshold=-1;
 			threadNumber=1;
+			chromLengthFile=null;
 			applyPureFilterArguments(args);
-			System.out.println("USED ProxTh of "+proximityThreshold);
-			ProximityValidation proxVal=new ProximityValidation(new File(inputFile), new File(outputPath), proximityCount, proximityThreshold, inputFile2, inputFile3, false, mvmConcordantThreshold, null);
+			ProximityValidation proxVal=new ProximityValidation(new File(inputFile), new File(outputPath), proximityCount, proximityThreshold, inputFile2, inputFile3, false, mvmConcordantThreshold, chromLengthFile);
 			try {
 				if(enteredMvmSpan !=null){
 					proxVal.performMvmFilter(new File(inputFile),new File(outputPath),readLength,enteredMvmSpan,threadNumber);
@@ -169,7 +173,7 @@ public class Main {
 
 	private static void applyFicoreArguments(String[] args) {
 		for(int i=1;i<args.length;i++){
-			if(args[i].equals("-o")){
+			if(args[i].equals("-lc")){
 				i++;
 				outputPath=args[i];
 			}
@@ -251,6 +255,10 @@ public class Main {
 				i++;
 				inputFile2=args[i];
 			}
+			else if(args[i].equals("-r")){
+				i++;
+				chromLengthFile=args[i];
+			}
 			else if(args[i].equals("-help")){
 				System.err.println(u_analyse);
 				System.exit(-1);
@@ -331,6 +339,10 @@ public class Main {
 					proximityThreshold=Integer.parseInt(args[i]);
 				}
 			}
+			else if(args[i].equals("-r")){
+				i++;
+				chromLengthFile=args[i];
+			}
 			else if(args[i].equals("-T")){
 				i++;
 				readLength=Integer.parseInt(args[i]);
@@ -342,7 +354,6 @@ public class Main {
 			else if(args[i].equals("-an")){
 				i++;
 				anker=Integer.parseInt(args[i]);
-				System.out.println("BLIP"+anker);
 			}
 			else if(args[i].equals("-help")){
 				System.err.println(u_proxval);
@@ -405,6 +416,10 @@ public class Main {
 			else if(args[i].equals("-p")){
 				i++;
 				threadNumber=Integer.parseInt(args[i]);
+			}
+			else if(args[i].equals("-r")){
+				i++;
+				chromLengthFile=args[i];
 			}
 			else if(args[i].equals("-help")){
 				System.err.println("");

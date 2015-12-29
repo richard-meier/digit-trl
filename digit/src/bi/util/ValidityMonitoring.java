@@ -89,9 +89,10 @@ public class ValidityMonitoring {
 	public void testRun(File input, File output, int readLength) throws IOException{
 		BufferedReader br = new BufferedReader(new FileReader(input));
 		BufferedWriter bw = new BufferedWriter(new FileWriter(output));
-		BufferedWriter bw2 = new BufferedWriter(new FileWriter(output+"1P_TEST.txt"));
+//		BufferedWriter bw2 = new BufferedWriter(new FileWriter(output+"1P_TEST.txt"));
 		String line1, line2;
 		int cnt=0;
+//		boolean past=true;
 		while((line1=br.readLine())!=null){
 			if(line1.length()<2) continue;
 			SAMEntry read1 = new SAMEntry(line1);
@@ -112,7 +113,8 @@ public class ValidityMonitoring {
 			String seq2 = read2.getSequence();
 
 			int cutOff=(int)(Math.round(0.75*readLength));
-			if(cutOff<50) cutOff=readLength;
+			if(cutOff<35) cutOff=readLength-1;
+			
 			if(seq1.length()<cutOff || seq2.length()<cutOff) continue;
 			
 			int start1 = read1.getPosition()-readLength, start2 = read2.getPosition()-readLength;
@@ -121,6 +123,7 @@ public class ValidityMonitoring {
 			if(Math.abs(read1.getPosition()-read2.getPosition())<3.01*readLength){
 				continue;
 			}
+//			if(past){System.out.println("B "+seq1.length()+" "+seq2.length()+" "+cutOff); past=false;}
 			cnt++;
 			if(cnt%(sampleCount/10)==0){
 				System.out.println("\t\t"+cnt+" pairs processed ...");
@@ -134,15 +137,15 @@ public class ValidityMonitoring {
 			}
 			
 			double mvm=mapVal.calculateLowerValidityScoreAndPrint(seq1, seq2, reg1, reg2, bw);
-			if(mvm<1.001 && mvm>0.999){
-				bw2.write(line1);
-				bw2.newLine();
-				bw2.write(line2);
-				bw2.newLine();
-			}
+//			if(mvm<1.001 && mvm>0.999){
+//				bw2.write(line1);
+//				bw2.newLine();
+//				bw2.write(line2);
+//				bw2.newLine();
+//			}
 		}
 		bw.close();
-		bw2.close();
+//		bw2.close();
 		br.close();
 	}
 }

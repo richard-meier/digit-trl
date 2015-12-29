@@ -152,12 +152,22 @@ public class GenomeRandomFileAccess {
 		try {
 			RandomAccessFile rafIn = new RandomAccessFile(genomeFile,"r");
 			BufferedWriter bwOut = new BufferedWriter(new FileWriter(outFile));
+			BufferedWriter bwChr = new BufferedWriter(new FileWriter(outFile+".ChrLen.txt"));
 			String line;
 			int currentPosition=0;
 			int lineBreakOffset=1;
+			boolean first=true;
+			String curChr=null;
 			while((line=rafIn.readLine())!=null){
 				if(line.length()==0) continue;
 				if(line.charAt(0)=='>'){
+					if(!first){
+						bwChr.write(curChr+"\t"+currentPosition);
+						bwChr.newLine();
+						bwChr.flush();
+					}
+					first=false;
+					curChr=line.substring(1);
 					System.out.println("PROCESSING "+line);
 					bwOut.write(line);
 					bwOut.newLine();
@@ -183,6 +193,7 @@ public class GenomeRandomFileAccess {
 				}
 			}
 			rafIn.close();
+			bwChr.close();
 			bwOut.close();
 		} catch (IOException e) {
 			e.printStackTrace();

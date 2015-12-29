@@ -95,44 +95,18 @@ public class FicoreLibrary {
 		"hsY","hsY_KI270740v1_random"
 		};
 	
-	public static void replaceChromosomeNames(String nameFile) throws IOException{
-		Vector<String> names = new Vector<String>();
-		BufferedReader br = new BufferedReader(new FileReader(new File(nameFile)));
-		String line;
-		while( (line=br.readLine())!=null ){
-			if(line.length()<1) continue;
-			names.add(line);
-		}
-		br.close();
-		Collections.sort(
-			names, new Comparator<String>(){
-				public int compare(String f1, String f2){
-					return f1.toString().compareTo(f2.toString());
-				}        
-			}
-		);
-		chromosomes=new String[names.size()];
-		for(int i=0; i<names.size(); i++){
-			chromosomes[i]=names.get(i);
-		}
-	}
-
 	public FicoreLibrary(String dFileStr, String nFileStr, String chromosomeFile, String[] categoriesStr, String outputFile) throws IOException{
 		this.outputFile=outputFile;
 		this.chromosomeFileString=chromosomeFile;
-//		if(chromosomes!=null){
-			replaceChromosomeNames(chromosomeFile);
-//		}
 		
 		files = new Vector<String>();
 		normalFiles = new Vector<String>();
 		diseaseFiles = new Vector<String>();
 		String[] dFiles = dFileStr.split(",");
 		String[] nFiles = nFileStr.split(",");
+		
 		initialise();
 		
-		System.err.println("LCc = "+chromosomes.length);
-		System.err.println("LC0 = "+chromosomes0.length);
 		int foundElements=0;
 		for(String chr1 : chromosomes){
 			for(String chr2 : chromosomes0){
@@ -217,12 +191,12 @@ public class FicoreLibrary {
 	}
 	
 	private void initialise() throws IOException{
-//		BufferedReader br=new BufferedReader(new FileReader("/home/richard/Desktop/new_jobFiles/ficore_dump/hg38_chr.txt")); aqewdsaesffcaqewasfsdq	
 		BufferedReader br=new BufferedReader(new FileReader(chromosomeFileString));
 		String line;
 		Vector<String> chrs=new Vector<String>();
 		while((line=br.readLine())!=null){
 			if(line.length()<2) continue;
+			line=line.split("\\s")[0];
 			if(line.charAt(0)=='c' && line.charAt(1)=='h' && line.charAt(2)=='r'){
 				line="hs"+line.substring(3);
 			}
@@ -301,6 +275,10 @@ public class FicoreLibrary {
 			
 			updateRegionSubFileCount(pair, p1, p2, category, prefix, swap);
 
+			if(!chrPermToReadPair.keySet().contains(chrom1+chrom2)){
+				System.err.println(chrom1+" . "+chrom2+"\tnot contained!");
+				continue;
+			}
 			chrPermToReadPair.get(chrom1+chrom2).add(pair);
 			countR++;
 		}
@@ -405,7 +383,7 @@ public class FicoreLibrary {
 					}
 				}
 				
-				tryToFinalMerge(regions);
+				regions=tryToFinalMerge(regions);
 				for(ReadPair reg:regions){
 					if(reg.iDs.size()>=minimalSampleCount){
 						storeCommonRegion(reg);
@@ -415,7 +393,8 @@ public class FicoreLibrary {
 				}
 			}
 		}
-System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"+count3);
+		
+		System.err.println("chromosome_perms = "+chrPermToReadPair.keySet().size()+"\tinitial_events="+countR+"\tmergings="+mergeCount+"\tclusters="+count2+"/"+count3);
 		System.out.println("==========< ALL UNIQUE >==========");
 		reportAllUnique();
 		System.out.println();
@@ -431,24 +410,28 @@ System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"
 		System.out.println();
 		System.out.println("=========< SPECIFIC-SUB >=========");
 		reportAllCancerSpecific(true);
-//		System.out.println();
+		System.out.println();
 		System.out.println("=========< SUPER TARGET >=========");
 		findCommonSuperClusterTargets();
 		System.out.println();
-		if(outputFile!=null){
-			BufferedWriter bw = new BufferedWriter(new FileWriter(new File(outputFile)));
-			generateNewLibrary(bw);
-			bw.close();
-		}
 		System.out.println("==========< BREAK DOWN >==========");
 		System.out.println("Common = " + allCommon);
 		System.out.println("Specific = "+allSpecific);
 		
 		reportClusterPropertiesOnly();
+		
+		if(outputFile!=null){
+			System.err.println("Generating common library");
+			BufferedWriter bw = new BufferedWriter(new FileWriter(new File(outputFile)));
+			generateNewLibrary(bw);
+			bw.close();
+			System.err.println("... finished library!");
+		}
 	}
 	
 	private static int allCommon=0, allSpecific=0;
 	
+	int mergeCount=0;
 	private void merge(ReadPair target, ReadPair input){
 		int start1 = Math.min(target.reg1.getStart(), input.reg1.getStart());
 		int start2 = Math.min(target.reg2.getStart(), input.reg2.getStart());
@@ -473,16 +456,41 @@ System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"
 				target.fileNameToReadsInRegion2.get(fStr).add(read);
 			}
 		}
+		mergeCount++;
 	}
 	
-	private void tryToFinalMerge(Vector<ReadPair> regions){
-		for(int i=0; i<regions.size(); i++){
-			for(int j=i+1; j<regions.size(); j++){
-				if(regions.get(i).overlaps(regions.get(j), 10000)){
-					merge(regions.get(i),regions.get(j));
+	private Vector<ReadPair> tryToFinalMerge(Vector<ReadPair> regions){
+//		for(int i=0; i<regions.size(); i++){
+//			for(int j=i+1; j<regions.size(); j++){
+//				if(regions.get(i).overlaps(regions.get(j), 10000)){
+//					merge(regions.get(i),regions.get(j));
+//				}
+//			}
+//		}
+		Vector<ReadPair> current = (Vector<ReadPair>) regions.clone();
+		Vector<ReadPair> exclude = new Vector<ReadPair>();
+		boolean changed=true;
+//		System.err.print("before="+current.size()+"\t");
+		while(changed){
+			changed=false;
+			exclude.removeAllElements();
+			for(int i=0; i<current.size(); i++){
+				for(int j=i+1; j<current.size(); j++){
+					if(current.get(i).overlaps(current.get(j), 10000)){
+						merge(current.get(i),current.get(j));
+						exclude.add(current.get(j));
+					}
+				}
+			}
+			if(exclude.size()>0){
+				changed=true;
+				for(ReadPair rmp:exclude){
+					current.remove(rmp);
 				}
 			}
 		}
+//		System.err.println("after="+current.size());
+		return current;
 	}
 	
 	private void storeCommonRegion(ReadPair reg) {
@@ -492,7 +500,6 @@ System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"
 	
 	private void reportAllUnique(){
 		Vector<ReadPair> currentRegion=countToClusterRegions.get(1);
-		
 		int cancerCount=0;
 		for(int j=0; j<currentRegion.size(); j++){
 			reportCommonRegion(currentRegion.get(j),"");
@@ -545,6 +552,8 @@ System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"
 				SortTupel tup = new SortTupel();
 				tup.pair=currentRegion.get(j);
 				tup.rate=cancerOccuranceRate;
+				tup.dFraq=normalizedCancerCount;
+				tup.nFraq=normalizedNormalCount;
 				tups.add(tup);
 				if(i>0) predispositionRegions.add(currentRegion.get(j));
 			}
@@ -553,7 +562,7 @@ System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"
 		for(int i=0; i<tups.size(); i++){
 			SortTupel tup = tups.get(i);
 			double rounded = Math.round(tup.rate*10000.0)/10000.0;
-			reportCommonRegion(tup.pair, rounded+"\t");
+			reportCommonRegion(tup.pair, rounded+"\t"+tup.dFraq+"\t"+tup.nFraq+"\t");
 			reportCommonRegionWithProperties(tup.pair);
 		}
 	}
@@ -575,7 +584,7 @@ System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"
 					else {
 						reportCommonRegion(currentRegion.get(j),"");
 					}
-					allSpecific++;
+					if(!reportSub) allSpecific++;
 					if(i>0) specificOverlapRegions.add(currentRegion.get(j));
 					cnt++;
 				}
@@ -784,7 +793,7 @@ System.err.println(count+"\t"+chrPermToReadPair.keySet().size()+"\t"+count2+"\t"
 	
 	private class SortTupel implements Comparable<SortTupel>{
 		public ReadPair pair;
-		public double rate;
+		public double rate, dFraq, nFraq;
 		@Override
 		public int compareTo(SortTupel other) {
 			if(this.rate>other.rate) return -1;

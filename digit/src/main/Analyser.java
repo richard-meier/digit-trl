@@ -44,7 +44,7 @@ public class Analyser {
 	private double medianValueOfReadLength;
 	private int insCount, delCount, transCount;
 	private double numberTimesSigma;
-	private boolean inputIsBWA, inputIsBowtie;
+	private boolean utilizeXtTagToSubsetToUniqueReads;
 	private Pattern patternSoftclippedMatchSoftclipped = Pattern.compile("^\\d+[S](\\d+[MDI]+)+\\d+[S]$");
 	private Pattern patternMatchSoftclipped = Pattern.compile("^(\\d+[MDI]{1})+(\\d+[S]){1}$");
 	private Pattern patternSoftclippedMatch = Pattern.compile("^(\\d+[S]){1}(\\d+[MDI]{1})+$");
@@ -61,20 +61,15 @@ public class Analyser {
 		this.outputPath=outputPath;
 		this.numberTimesSigma=numberTimesSigma;
 		inversionCounter=0;
-		if(type !=null && type.contains("bowtie")){
-			inputIsBowtie=true;
-			System.out.println("Assuming alignment has been created with bowtie2");
-		}
-		else {
-			inputIsBWA=true;
-			System.out.println("Assuming alignment has been created with bwa");
+		if(type !=null && (type.toLowerCase().contains("true") || type.toLowerCase().contains("bwa"))){
+			utilizeXtTagToSubsetToUniqueReads=true;
+			System.out.println("Assuming alignment has been created with bwa aln. Data will be subset to XT:A:U !");
 		}
 		lowComplexityAnnotationCheck = new AnnotationCheck(lca_file,chrLen);
-		System.out.println("Detected MAPQ-TH of "+this.mapQual);
+		System.out.println("Using MAPQ-TH of "+this.mapQual);
 	}
 
 	public void run() throws IOException{
-		System.out.println("Doing weird things... -__- 0");
 		System.out.println("Calculating Statistical Parameters");
 		calulateMedian();
 		System.out.println("\tStep 1/2 done...");
@@ -122,6 +117,7 @@ public class Analyser {
 			}
 			if(!r1.getQname().equals(r2.getQname())){
 				System.err.println("ERROR:: There exist subsequent unpaired reads in the input file!\nSort the sam file according to read names and re-run the program!");
+				System.err.println("Aborted at line"+(cnt*2));
 				System.exit(-1);
 			}
 			if(cnt<1000000){
@@ -221,17 +217,17 @@ public class Analyser {
 		BufferedWriter bwd = new BufferedWriter(new FileWriter(currentFileName+"del.sam"));
 		BufferedWriter bwt = new BufferedWriter(new FileWriter(currentFileName+"trl.sam"));
 		BufferedWriter bwiv = new BufferedWriter(new FileWriter(currentFileName+"inv.sam"));
-		BufferedWriter bwunmR1 = new BufferedWriter(new FileWriter(currentFileName+"unmapped_R1.sam"));
-		BufferedWriter bwunmR2 = new BufferedWriter(new FileWriter(currentFileName+"unmapped_R2.sam"));
-		BufferedWriter badQualR1 = new BufferedWriter(new FileWriter(currentFileName+"badQ_R1.sam"));
-		BufferedWriter badQualR2 = new BufferedWriter(new FileWriter(currentFileName+"badQ_R2.sam"));
+//		BufferedWriter bwunmR1 = new BufferedWriter(new FileWriter(currentFileName+"unmapped_R1.sam"));
+//		BufferedWriter bwunmR2 = new BufferedWriter(new FileWriter(currentFileName+"unmapped_R2.sam"));
+//		BufferedWriter badQualR1 = new BufferedWriter(new FileWriter(currentFileName+"badQ_R1.sam"));
+//		BufferedWriter badQualR2 = new BufferedWriter(new FileWriter(currentFileName+"badQ_R2.sam"));
 		BufferedWriter concordantWriter = new BufferedWriter(new FileWriter(currentFileName+"conc.sam"));
 		BufferedWriter summaryWriter = new BufferedWriter(new FileWriter(currentFileName+"summary.txt"));
 		BufferedWriter softsummary = new BufferedWriter(new FileWriter(currentFileName+"softsummary.fq"));
 		BufferedWriter softclips = new BufferedWriter(new FileWriter(currentFileName+"softclips.sam"));
-		BufferedWriter lowComp = new BufferedWriter(new FileWriter(currentFileName+"low_complexity.sam"));
+//		BufferedWriter lowComp = new BufferedWriter(new FileWriter(currentFileName+"low_complexity.sam"));
 		
-		BufferedWriter bwDM = new BufferedWriter(new FileWriter(outputPath+"DISC_MAPQ.txt"));
+//		BufferedWriter bwDM = new BufferedWriter(new FileWriter(outputPath+"DISC_MAPQ.txt"));
 		String line1;
 		String line2;
 		int currentReadLength;
@@ -330,7 +326,7 @@ public class Analyser {
 				bwt.write(line1+"\n"+line2+"\n\n");
 			} else{
 				if(entriesRepresentInversion(read1, read2)){
-					bwDM.write(read1.getMappingQuality()+""); bwDM.newLine();
+//					bwDM.write(read1.getMappingQuality()+""); bwDM.newLine();
 					bwiv.write(line1+"\n"+line2+"\n\n");
 					inversionCounter++;
 				}
@@ -364,7 +360,7 @@ public class Analyser {
 				}
 			}
 		}
-		System.out.println(XOR_DUP_COUNT+" reads have been wrongly assigned by picard tools as single strand dublications!");
+//		System.out.println(XOR_DUP_COUNT+" reads have been wrongly assigned by picard tools as single strand dublications!");
 		System.out.println(AND_DUP_COUNT+" reads have been filtered out because they are marked as paired dublications!");
 		System.out.println(TOO_SHORT_COUNT+" reads have been filtered out because they are too short!");
 		String summary = "";
@@ -380,17 +376,17 @@ public class Analyser {
 		bwd.close();
 		bwt.close();
 		brs.close();
-		bwunmR1.close();
-		bwunmR2.close();
-		badQualR1.close();
-		badQualR2.close();
+//		bwunmR1.close();
+//		bwunmR2.close();
+//		badQualR1.close();
+//		badQualR2.close();
 		bwiv.close();
 		concordantWriter.close();
 		summaryWriter.close();
 		softsummary.close();
 		softclips.close();
-		lowComp.close();
-		bwDM.close();
+//		lowComp.close();
+//		bwDM.close();
 	}
 
 	final static String myPat = "z!~#z!z#~!z";
@@ -529,7 +525,7 @@ public class Analyser {
 	private boolean hasBadQuality(SAMEntry e){
 		if(e.getSequence().length()<20) return true;
 		if(e.getMappingQuality()<mapQual || SAMFlagCheck.checkNotPassedQualityControl(e.getFlag())) return true;
-		else if(inputIsBWA){
+		else if(utilizeXtTagToSubsetToUniqueReads){
 			if(!e.getXT().equals("XT:A:U")) return true;
 			else return false;
 		}
