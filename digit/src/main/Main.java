@@ -37,6 +37,7 @@ public class Main {
 	inputFile3 = null,
 	inputFile4 = null,
 	outputPath = null,
+	outputPath2 = null,
 	chromLengthFile = null;
 	
 	public static String[] inputArray1=null;
@@ -56,18 +57,21 @@ public class Main {
 			"       -o output     \t specify output file for the created index\n\n";
 	
 	public static final String u_ficore = "ficore\n"+
-			"       -lc output     \t specify output file for library creation\n"+
-			"       -D target     \t specify list of files in target (disease) group\n"+
-			"       -N other      \t specify list of files in other (normal) group\n"+
-			"       -C groups     \t specify sub-groups\n\n";
+			"       -D  target    \t specify list of files in target (disease) group\n"+
+			"       -N  other     \t specify list of files in other (normal) group\n"+
+			"       -C  groups    \t specify sub-groups\n"+
+			"       -r  chr-file  \t chromosome name file for reference\n"+
+			"       -lc output   \t specify output file for library creation\n\n"
+			;
 	
 	public static final String u_analyse = "analyse\n"+
-			"       -i infile   \t specify SAM-input file\n"+
-			"       -o outpath  \t specify directory for insertion, deletion, translocation output file\n"+
-			"       -s sigma    \t specify the multiple of sigma [2.33]\n"+
-			"       -lc lc-file \t file with low complexity region annotation of the genome\n"+
-			"       -q quality  \t MAPQ threshold used to reject reads [0]\n"+
-			"       -a aligner  \t specify the alignment software used to create infile [false]\n\n";
+			"       -i  infile   \t specify SAM-input file\n"+
+			"       -o  outpath  \t specify directory for output files\n"+
+			"       -s  sigma    \t specify the multiple of sigma [2.33]\n"+
+			"       -lc lc-file  \t bed file with low complexity region annotation of the genome\n"+
+			"       -q  quality  \t MAPQ threshold used to reject reads [0]\n"+
+			"       -r  chr-file \t chromosome length file for reference\n"+
+			"       -a  aln      \t filter by XT:A:U tags (legacy setting) [false]\n\n";
 
 	public static final String u_revcomp = "revcomp\n"+
 			"       -i infile \t specify fastq input file\n"+
@@ -80,13 +84,35 @@ public class Main {
 			"       -t threshold  \t specify the proximity threshold used for validation [100]\n"+
 			"       -g genome     \t specify genome fasta file\n"+
 			"       -x index      \t specify genome index file\n"+
+			"       -r chr-file   \t chromosome length file for reference\n"+
 			"       -M MVM        \t specify the MVM concordant threshold [0.005]\n"+
-			"       -T rd length  \t specify the maximum read length\n\n";
+			"       -T rd-length  \t specify the maximum read length\n\n";
+	
+	public static final String u_mvmfo = "mvmfo\n"+
+			"       -i infile     \t specify analysed input file\n"+
+			"       -o outfile    \t specify output file\n"+
+			"       -t threshold  \t specify the proximity threshold used for validation [100]\n"+
+			"       -g genome     \t specify genome fasta file\n"+
+			"       -x index      \t specify genome index file\n"+
+			"       -M MVM        \t specify the MVM concordant threshold [0.005]\n"+
+			"       -p thread-num \t specify the number of threads to be used\n"+
+			"       -r chr-file   \t chromosome length file for reference\n"+
+			"       -T rd-length  \t specify the maximum read length\n\n"
+			;
 
+	public static final String u_chrospl = "chrospl\n"+
+			"       -i  input     \t specify headerless SAM-input file\n"+
+			"       -o1 output1   \t specify primary output file\n"+
+			"       -o2 output2   \t specify secondary output file\n"+
+			"       -s  chrset    \t specify chromosome set that input is split by\n\n"
+			;
+	
 	public static final String usage=
 			"\n"+
 			u_analyse+
+			u_chrospl+
 			u_index+
+			u_mvmfo+
 			u_proxval+
 			u_revcomp
 			;
@@ -164,6 +190,11 @@ public class Main {
 			FicoreLibrary fcr = new FicoreLibrary(inputFile,inputFile2,inputFile3,inputArray1,outputPath);
 			fcr.run();
 		}
+		else if(args[0].equals("chrospl")){
+			applyChromosomeSplittingArguments(args);
+			ChromosomeSplitting csp = new ChromosomeSplitting(inputArray1,inputFile,outputPath,outputPath2);
+			csp.run();
+		}
 		else {
 			System.err.println("Error:: Invalid command.");
 			System.out.println(usage);
@@ -195,7 +226,7 @@ public class Main {
 			}
 			else{
 				System.err.println("Error: invalid input arguments, see usage");
-				System.out.println(u_index);
+				System.out.println(u_ficore);
 				System.exit(-1);
 			}
 		}
@@ -422,19 +453,19 @@ public class Main {
 				chromLengthFile=args[i];
 			}
 			else if(args[i].equals("-help")){
-				System.err.println("");
+				System.err.println(u_mvmfo);
 				System.exit(-1);
 			}
 			else{
 				System.err.println("Error: invalid input arguments, see usage");
-				System.out.println("");
+				System.out.println(u_mvmfo);
 				System.exit(-1);
 			}
 		}
 		
 		if(inputFile == null || outputPath == null) {
 			System.err.println("Error: INVALID INPUT: Please define ALL non-optional parameters!");
-			System.out.println("");
+			System.out.println(u_mvmfo);
 			System.exit(-1);
 		}
 	}
@@ -454,6 +485,37 @@ public class Main {
 		}
 		br.close();
 		return out;
+	}
+	
+	private static void applyChromosomeSplittingArguments(String[] args) {
+		for(int i=1;i<args.length;i++){
+			if(args[i].equals("-i")){
+				i++;
+				inputFile=args[i];
+			}
+			else if(args[i].equals("-o1")){
+				i++;
+				outputPath=args[i];
+			}
+			else if(args[i].equals("-o2")){
+				i++;
+				outputPath2=args[i];
+			}
+			else if(args[i].equals("-s")){
+				i++;
+				inputArray1=args[i].split(",");
+			}
+			else{
+				System.err.println("Error: invalid input arguments, see usage");
+				System.out.println(u_chrospl);
+				System.exit(-1);
+			}
+		}
+		if(inputFile == null || outputPath == null) {
+			System.err.println("Error:INVALID INPUT: Please define ALL non-optional parameters!");
+			System.out.println(u_chrospl);
+			System.exit(-1);
+		}
 	}
 	
 }
