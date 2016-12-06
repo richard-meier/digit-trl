@@ -28,7 +28,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -459,18 +458,11 @@ public class FicoreLibrary {
 		mergeCount++;
 	}
 	
+	@SuppressWarnings("unchecked")
 	private Vector<ReadPair> tryToFinalMerge(Vector<ReadPair> regions){
-//		for(int i=0; i<regions.size(); i++){
-//			for(int j=i+1; j<regions.size(); j++){
-//				if(regions.get(i).overlaps(regions.get(j), 10000)){
-//					merge(regions.get(i),regions.get(j));
-//				}
-//			}
-//		}
 		Vector<ReadPair> current = (Vector<ReadPair>) regions.clone();
 		Vector<ReadPair> exclude = new Vector<ReadPair>();
 		boolean changed=true;
-//		System.err.print("before="+current.size()+"\t");
 		while(changed){
 			changed=false;
 			exclude.removeAllElements();
@@ -489,7 +481,6 @@ public class FicoreLibrary {
 				}
 			}
 		}
-//		System.err.println("after="+current.size());
 		return current;
 	}
 	

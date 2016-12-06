@@ -155,16 +155,6 @@ public class Main {
 			}
 			proxVal.performClusterAnalysis(readLength);
 		}
-//		else if(args[0].equals("proxvalZ")){
-//			anker=-1;
-//			readLength=-1;
-//			proximityCount = 3;
-//			proximityThreshold = 100;
-//			printReadNames=false;
-//			applyProxvalArguments(args);
-//			ProximityValidationZ proxVal=new ProximityValidationZ(new File(inputFile), new File(outputPath), proximityCount,proximityThreshold, inputFile2, inputFile3, true, null);
-//			proxVal.performClusterAnalysis(readLength);
-//		}
 		else if(args[0].equals("mvmfo")){
 			readLength=-1;
 			proximityCount = 3;
@@ -194,6 +184,19 @@ public class Main {
 			applyChromosomeSplittingArguments(args);
 			ChromosomeSplitting csp = new ChromosomeSplitting(inputArray1,inputFile,outputPath,outputPath2);
 			csp.run();
+		}
+		else if(args[0].equals("dev.test.sw")){
+			long tseed = Long.parseLong(args[1]);
+			String storeOut = null;
+			if(args.length>2){
+				if(args[2].length()>1){
+					storeOut = args[2];
+				} else{
+					System.err.println("ERROR::Invalid file destination!");
+					System.exit(-1);
+				}
+			}
+			TestSwAlignment.run(storeOut, tseed);
 		}
 		else {
 			System.err.println("Error:: Invalid command.");

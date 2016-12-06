@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  This file was created by utilizing a template provided by stackoverflow.com user Ian S. http://stackoverflow.com/users/5619133/ian-s
+  The original template was provided here: http://stackoverflow.com/questions/9874550/how-to-create-a-bundled-runnable-jar-using-ant
+-->
+
+<project name="digit" default="jar" basedir=".">
+    <!-- source code package -->
+    <property name="src" value="src"/>
+
+    <!-- classes folder (will be deleted) -->
+    <property name="cls" value="classes"/>
+
+    <!-- the directory of the jar file -->
+    <property name="jar.dir" value="../executables"/>
+
+    <!-- the jar file itself -->
+    <property name="jar.file" value="${jar.dir}/${ant.project.name}.jar"/>
+
+    <!-- the fully qualified name of the main class -->
+    <property name="main" value="main.Main"/>
+
+    <!-- initialization -->
+    <target name="-init">
+
+        <!-- the class folder* -->
+        <mkdir dir="${cls}"/>
+
+        <!-- the jar directory -->
+        <mkdir dir="${jar.dir}"/>
+    </target>
+
+    <!-- compiling of files -->
+    <target name="-post-init-comp" depends="-init">
+
+        <!--
+          turn all of the source java classes into class files
+          located in the directory we made*
+        -->
+        <javac srcdir="${src}" destdir="${cls}"/>
+    </target>
+
+    <!-- creation of the jar file -->
+    <target name="jar" depends="-post-init-comp">
+
+        <!-- make the executable jar -->
+        <jar destfile="${jar.file}" basedir="${cls}">
+            <manifest>
+
+                <attribute name="Manifest-Version" value="1.0"/>
+                <attribute name="Ant-Version" value="Apache Ant 1.8.3"/>
+
+                <attribute name="Main-Class" value="${main}"/>
+
+                <attribute name="Class-Path" value="${main}"/>
+
+            </manifest>
+        </jar>
+
+        <!-- remove the class folder -->
+        <delete dir="${cls}"/>
+    </target>
+</project>

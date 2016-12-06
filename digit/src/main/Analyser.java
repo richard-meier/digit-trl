@@ -217,17 +217,11 @@ public class Analyser {
 		BufferedWriter bwd = new BufferedWriter(new FileWriter(currentFileName+"del.sam"));
 		BufferedWriter bwt = new BufferedWriter(new FileWriter(currentFileName+"trl.sam"));
 		BufferedWriter bwiv = new BufferedWriter(new FileWriter(currentFileName+"inv.sam"));
-//		BufferedWriter bwunmR1 = new BufferedWriter(new FileWriter(currentFileName+"unmapped_R1.sam"));
-//		BufferedWriter bwunmR2 = new BufferedWriter(new FileWriter(currentFileName+"unmapped_R2.sam"));
-//		BufferedWriter badQualR1 = new BufferedWriter(new FileWriter(currentFileName+"badQ_R1.sam"));
-//		BufferedWriter badQualR2 = new BufferedWriter(new FileWriter(currentFileName+"badQ_R2.sam"));
 		BufferedWriter concordantWriter = new BufferedWriter(new FileWriter(currentFileName+"conc.sam"));
 		BufferedWriter summaryWriter = new BufferedWriter(new FileWriter(currentFileName+"summary.txt"));
 		BufferedWriter softsummary = new BufferedWriter(new FileWriter(currentFileName+"softsummary.fq"));
 		BufferedWriter softclips = new BufferedWriter(new FileWriter(currentFileName+"softclips.sam"));
-//		BufferedWriter lowComp = new BufferedWriter(new FileWriter(currentFileName+"low_complexity.sam"));
-		
-//		BufferedWriter bwDM = new BufferedWriter(new FileWriter(outputPath+"DISC_MAPQ.txt"));
+
 		String line1;
 		String line2;
 		int currentReadLength;
@@ -326,7 +320,6 @@ public class Analyser {
 				bwt.write(line1+"\n"+line2+"\n\n");
 			} else{
 				if(entriesRepresentInversion(read1, read2)){
-//					bwDM.write(read1.getMappingQuality()+""); bwDM.newLine();
 					bwiv.write(line1+"\n"+line2+"\n\n");
 					inversionCounter++;
 				}
@@ -360,7 +353,6 @@ public class Analyser {
 				}
 			}
 		}
-//		System.out.println(XOR_DUP_COUNT+" reads have been wrongly assigned by picard tools as single strand dublications!");
 		System.out.println(AND_DUP_COUNT+" reads have been filtered out because they are marked as paired dublications!");
 		System.out.println(TOO_SHORT_COUNT+" reads have been filtered out because they are too short!");
 		String summary = "";
@@ -376,17 +368,11 @@ public class Analyser {
 		bwd.close();
 		bwt.close();
 		brs.close();
-//		bwunmR1.close();
-//		bwunmR2.close();
-//		badQualR1.close();
-//		badQualR2.close();
 		bwiv.close();
 		concordantWriter.close();
 		summaryWriter.close();
 		softsummary.close();
 		softclips.close();
-//		lowComp.close();
-//		bwDM.close();
 	}
 
 	final static String myPat = "z!~#z!z#~!z";
